@@ -1,10 +1,16 @@
 # Package: dmcb
 from io import BytesIO
 from socket import error, herror, gaierror, timeout
+from struct import pack
+from time import time
+import socket
+import requests
 
 from PIL import Image, ImageDraw
 
 from dmcb import font, network, get_path
+
+
 
 
 # Parse the background texture
@@ -35,36 +41,79 @@ def banner(name, adress, port=25565):
         server_adress = font.parse('§8' + adress + '§7:§8' + str(port))
     else:
         server_adress = font.parse('§8' + adress)
+    
+
 
     try:
-        info = network.get_server_info(adress, port=port)
 
-        motd = info['description']
-        if type(motd) == dict:
-            motd = motd['text']
+
+        
+        
+        if port == 19132:
+            type = "bedrock"
+        else:
+            type = "java"
+        link = 'http://api.mcstatus.io/v2/status/'+ type +'/' + adress + ':' + str(port)
+        global body
+        body = requests.get(link, verify=False )
+        body = body.json()
+        global motd
+        global online
+        online = body['online']
+        online = str(online)
+        print("ONLINE MI SERVER HE SOYLE BANA AMK: " +online)
+        if online == "False":
+            motd = "§4Can't reach this server"
+        else: 
+            motd = body['motd']['raw']
+            motd = str(motd).encode().decode('utf-8')
+        
+
         motd = "§7" + motd
         if '\n' in motd:
             motd = motd.split('\n')
+            
         else:
             if len(motd) > 45:
                 motd = [motd[:45], motd[45:]]
             else:
                 motd = [motd]
-
+                
+        
+        info = network.get_server_info(adress, port=port)
         players = font.parse('§7' + str(info['players']['online']) +
                              '§8/§7' + str(info['players']['max']))
 
-        ping = parse_ping(info['ping'])
-        icon = info['favicon']
+
+        if port != 19132:
+            ping = parse_ping(info['ping'])
+            icon = info['favicon']
+        else:
+            ping = 0
+            icon = None
         if icon is not None:
             icon = Image.open(icon).convert('RGBA')
             icon.load()
+        else:
+            icon = Image.open(get_path('static/icon.png')).convert('RGBA')
 
     except (error, herror, gaierror, timeout, AssertionError):
-        motd = ["§4Can't reach server"]
-        players = []
-        icon = None
-        ping = -1
+
+        response = requests.get('https://api.mcsrvstat.us/icon/' + adress)
+        img = Image.open(BytesIO(response.content))
+        port = str(port)
+        if port == "19132" and online == "True":
+            info = body
+            motd = motd
+            players = font.parse('§7' + str(info['players']['online']) +
+                                '§8/§7' + str(info['players']['max']))
+            ping = 0
+            icon = img
+        else:
+            motd = ["§4Can't reach server"]
+            players = []
+            icon =Image.open(get_path('static/icon.png')).convert('RGBA')
+            ping = -1
     # Create the image, and past the texture on it
     icon_size = 64
     margin = 5

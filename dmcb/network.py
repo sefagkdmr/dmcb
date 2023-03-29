@@ -8,6 +8,7 @@ from dns import resolver
 from dmcb.mc_protocol import server_status
     
 def get_server_info(host, port=25565, check_srv = True):
+    
     ''' Get information about a minecraft server
     The result is a dict which looks like this:
     {

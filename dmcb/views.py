@@ -1,5 +1,5 @@
 # Package: dmcb
-from flask import abort, send_file;
+from flask import abort, send_file, redirect, url_for;
 
 from dmcb import app, cache, generator;
 
@@ -16,6 +16,11 @@ def name_adress(name, adress):
 def name_adress_port(name, adress, port):
     return send_file(wrapper(name, adress, port=port),
                      mimetype="image/png", as_attachment=False)
+
+# get winterville.studio web site   
+@app.route('/')
+def winterville():
+    return redirect("https://winterville.studio", code=302)
 
 @cache.memoize(timeout=app.config['TIMEOUT'])
 def wrapper(name, adress, port = 25565):
